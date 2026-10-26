@@ -53,4 +53,15 @@ Install any additional PDF-reading dependencies the notebook requires.
 - Retrieval and answer quality have not been evaluated on a large independent dataset.
 
 ### AI and Other Assistance
-AI assistance was used during development and debugging. The implementation and evaluation results should be reviewed alongside the notebook.
+AI (ChatGPT) assistance was used during development and debugging. The implementation and evaluation results should be reviewed alongside the notebook.
+
+### Development Time and Process
+
+**Time spent:** 2 hours and 43 minutes on the main development session (12:02–14:45), followed by additional time for GitHub uploads and submission documentation. Total time was not tracked precisely.
+
+**Development approach:** The RAG pipeline was implemented and tested in Google Colab, with AI assistance for implementation guidance, debugging, and documentation.
+
+**Evaluation results:** Both keyword and embedding retrieval achieved 3/3 hits on answerable test questions. All five answer checks passed, including the two unanswerable questions for which the system abstained.
+
+**Limitations:** Evaluation used five test questions. Answer generation uses predefined rules rather than a generative language model.
+
