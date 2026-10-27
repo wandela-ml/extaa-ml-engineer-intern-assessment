@@ -1,67 +1,90 @@
 # EXTAA ML Engineer Intern Assessment
 
+This repository contains my implementation of **Task 1: Basic Manual RAG** and **Task 4: Laya integration** for the EXTAA ML Engineer Intern assessment. Both tasks are documented in the submitted Jupyter/Colab notebook.
+
 ## Task 1: Basic Manual RAG
 
 ### Overview
-This project implements a basic Retrieval-Augmented Generation (RAG) pipeline using the provided IACS steel shipbuilding quality standard PDF. It extracts document text, divides it into chunks, retrieves relevant evidence using keyword-based and embedding-based search, and produces answers grounded in the retrieved content.
+
+The pipeline uses the supplied IACS steel shipbuilding quality standard PDF as its knowledge source. It extracts text from PDF pages 4–8, splits the text into 44 chunks, retrieves relevant evidence, and generates answers grounded in the retrieved chunks.
 
 ### Implementation
-- **Document processing:** Extracts text from the supplied PDF, using pages 4–8.
-- **Chunking:** Splits the extracted text into 44 chunks.
-- **Keyword retrieval:** Ranks chunks using keyword matching.
-- **Embedding retrieval:** Uses `sentence-transformers/all-MiniLM-L6-v2` to create 384-dimensional embeddings and cosine-similarity-based ranking.
-- **Answer generation:** Produces answers from predefined evidence-based rules and includes the source PDF page number. It is not a generative LLM.
-- **Abstention:** Returns `The supplied pages do not specify an answer.` when the supplied evidence does not support an answer.
 
-### Evaluation
-The notebook evaluates both keyword and embedding retrieval against five test questions: three answerable questions and two questions whose answers are not specified in the supplied pages.
+- **Document processing:** Extracts text from the selected PDF pages and retains original PDF page numbers.
+- **Keyword retrieval:** Ranks chunks using overlap between unique question and chunk terms after basic text preprocessing.
+- **Embedding retrieval:** Uses `sentence-transformers/all-MiniLM-L6-v2` to create 384-dimensional embeddings and rank chunks by cosine similarity.
+- **Answer generation:** Uses predefined evidence-based rules and includes PDF page citations. This is a rule-based answer generator, not a generative LLM.
+- **Fallback:** Returns `The supplied pages do not specify an answer.` when the supplied evidence does not support an answer.
 
-| Evaluation | Keyword retrieval | Embedding retrieval |
+### Task 1 test results
+
+The supplied test set contains three answerable questions and two questions whose answers are not specified in the selected pages.
+
+| Check | Keyword retrieval | Embedding retrieval |
 |---|---:|---:|
 | Answerable retrieval hits | 3/3 | 3/3 |
-| Expected unanswerable cases identified | 2/2 | 2/2 |
+| Expected unanswerable cases handled | 2/2 | 2/2 |
 | Answer checks passed | 5/5 | 5/5 |
 
-These results are from the included test questions and are not a measure of performance on a larger dataset.
+These results describe only the supplied test questions and should not be interpreted as performance on a larger dataset.
 
-### Requirements
-- Python
-- `sentence-transformers`
-- The PDF-reading library used in the notebook
-- The supplied IACS PDF document
+## Task 4: Laya Evidence-Sufficiency Gate
 
-Install the embedding dependency in your Python environment:
+### Overview
 
-```bash
-pip install sentence-transformers
-```
+Task 4 extends the embedding-based RAG pipeline with Laya, which decides whether the top three retrieved chunks contain enough evidence to answer a question.
 
-Install any additional PDF-reading dependencies the notebook requires.
+### Workflow
 
-### How to Run
+1. Retrieve the top three chunks using the existing embedding retriever.
+2. Send the question and retrieved evidence to Laya for an `answer` or `abstain` decision.
+3. If Laya returns `answer`, pass the retrieved evidence to the existing rule-based answer generator.
+4. If Laya returns `abstain`, use the standard fallback response.
+5. Record the decision, final answer, cited PDF pages, and any errors for evaluation.
+
+Laya acts as a decision gate; it does not replace retrieval or generate the final answer. The original retrieval and answer-generation methods remain unchanged.
+
+### Task 4 evaluation
+
+The ten supplied questions were evaluated across development and test splits. Laya's decisions were compared with the expected answerability labels.
+
+| Split | Correct decisions | Decision accuracy | Errors |
+|---|---:|---:|---:|
+| Development (5 questions) | 5/5 | 100% | 0 |
+| Test (5 questions) | 5/5 | 100% | 0 |
+
+Across these questions, Laya answered the eight questions labelled answerable and abstained on q9 and q10, whose answers were not available in the supplied pages. The final answers matched the Task 1 baseline in this evaluation.
+
+**Interpretation:** Laya made the expected decisions on this small, supplied set. This does not establish 100% accuracy on unseen questions or prove a general improvement in answer quality. In this run, Laya added an explicit evidence-sufficiency decision step while final answers remained unchanged.
+
+## Repository files
+
+- **Notebook (`.ipynb`):** Implementation, experiments, and documentation for Task 1 and Task 4.
+- **`task1_baseline_outputs.json`:** Baseline embedding-retrieval outputs for development and test questions.
+- **`task4_laya_outputs.json`:** Laya decisions, final answers, supporting PDF pages, and error fields for development and test questions.
+- **`task4_evaluation_summary.json`:** Decision-accuracy and error summaries for both splits.
+
+## Requirements and running the notebook
+
+The notebook was developed in Google Colab and uses Python libraries including `sentence-transformers`, `pypdf`, and `laya`.
+
 1. Open the notebook in Google Colab or a compatible Jupyter environment.
-2. Ensure the supplied PDF is available at the file path expected by the notebook.
-3. Install the required dependencies.
-4. Run the notebook cells in order.
-5. Run the keyword and embedding retrieval evaluations and inspect the answer checks.
+2. Run the cells in order and upload the assessment ZIP file when prompted.
+3. Allow the notebook to extract the required PDF, questions, and Task 4 supporting files.
+4. Install any missing dependencies if prompted, and ensure the Laya package and agent are accessible before running Task 4.
 
-### Limitations
-- The evaluation uses a small set of five test questions.
-- Only pages 4–8 of the supplied PDF are used.
-- Text extraction may not capture all information contained in diagrams or tables.
-- Answer generation uses predefined rules rather than a generative language model.
-- Retrieval and answer quality have not been evaluated on a large independent dataset.
+The JSON files are saved evaluation artifacts. Rerun the relevant notebook cells if you change the implementation and need to regenerate them.
 
-### AI and Other Assistance
-AI (ChatGPT) assistance was used during development and debugging. The implementation and evaluation results should be reviewed alongside the notebook.
+## Limitations
 
-### Development Time and Process
+- The source text is restricted to PDF pages 4–8; information elsewhere in the document is not considered.
+- PDF text extraction may miss information in complex tables, diagrams, or formatting.
+- Answer generation is rule-based and is not a general-purpose language model.
+- Evaluation uses only ten supplied questions, so the results are not representative of broader use.
+- Retrieval quality and Laya's decisions may differ on other documents, questions, or retrieved evidence.
 
-**Time spent:** 2 hours and 43 minutes on the main development session (12:02–14:45), followed by additional time for GitHub uploads and submission documentation. Total time was not tracked precisely.
+## AI assistance and development record
 
-**Development approach:** The RAG pipeline was implemented and tested in Google Colab, with AI assistance for implementation guidance, debugging, and documentation.
+ChatGPT was used for implementation guidance, debugging, and documentation. The notebook contains the implementation and evaluation steps for review.
 
-**Evaluation results:** Both keyword and embedding retrieval achieved 3/3 hits on answerable test questions. All five answer checks passed, including the two unanswerable questions for which the system abstained.
-
-**Limitations:** Evaluation used five test questions. Answer generation uses predefined rules rather than a generative language model.
-
+The documented development session ran from **12:26 AM to 2:57 AM EAT** (2 hours and 31 minutes). These times were recorded retrospectively rather than by a continuously running timer.
